@@ -16,6 +16,7 @@ RUN chmod 0700 ${PGDATA}
 
 # Define Postgres version for easier upgrades for the future
 ENV PG_MAJOR=11.5
+ENV PG_MINOR=r1
 
 # Copy init scripts to init directory
 COPY ./scripts/create-ehrbase-user.sh /docker-entrypoint-initdb.d/
@@ -30,24 +31,27 @@ RUN echo "host  all  all   0.0.0.0/0  scram-sha-256" >> ${PGDATA}/pg_hba.conf
 RUN echo "listen_addresses='*'" >> ${PGDATA}/postgresql.conf
 
 # Install python and dependencies
-RUN apk add --update postgresql-dev=${PG_MAJOR}-r1 \
+RUN apk add --update \
+                     #postgresql-dev=${PG_MAJOR}-${PG_MINOR} \
                      build-base \
                      git \
                      flex \
                      bison
 
+WORKDIR /plugins
+
 # Install temporary_tables plugin
-COPY ./scripts/install-temporal-tables.sh .
-RUN chmod +x ./install-temporal-tables.sh
+ADD ./scripts/install-temporal-tables.sh .
+RUN chmod +x install-temporal-tables.sh
 RUN sh -c "./install-temporal-tables.sh"
 
 # Install jsquery plugin
-COPY ./scripts/install-jsquery.sh .
+ADD ./scripts/install-jsquery.sh .
 RUN chmod +x ./install-jsquery.sh 
 RUN sh -c "./install-jsquery.sh"
 
 # Prepare database schemas
-COPY ./scripts/prepare-databases.sh .
+ADD ./scripts/prepare-databases.sh .
 RUN chmod +x ./prepare-databases.sh
 RUN sh -c "./prepare-databases.sh"
 
